@@ -1,0 +1,94 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<ExternalServiceRegistration xmlns="http://soap.sforce.com/2006/04/metadata">
+    <label>TwilioElevenLabs</label>
+    <namedCredentialReference>Named_credential_ElevenLabs</namedCredentialReference>
+    <operations>
+        <active>true</active>
+        <name>maketwiliocall</name>
+    </operations>
+    <registrationProviderType>Custom</registrationProviderType>
+    <schema>{
+  &quot;openapi&quot;: &quot;3.0.1&quot;,
+  &quot;info&quot;: {
+    &quot;title&quot;: &quot;ElevenLabs Twilio Outbound API&quot;,
+    &quot;description&quot;: &quot;Especificacion reducida para llamadas salientes via Twilio&quot;,
+    &quot;version&quot;: &quot;1.0.0&quot;
+  },
+  &quot;paths&quot;: {
+    &quot;/v1/convai/twilio/outbound-call&quot;: {
+      &quot;post&quot;: {
+        &quot;operationId&quot;: &quot;makeTwilioCall&quot;,
+        &quot;summary&quot;: &quot;Iniciar llamada saliente Twilio&quot;,
+        &quot;requestBody&quot;: {
+          &quot;required&quot;: true,
+          &quot;content&quot;: {
+            &quot;application/json&quot;: {
+              &quot;schema&quot;: {
+                &quot;$ref&quot;: &quot;#/components/schemas/TwilioCallPayload&quot;
+              }
+            }
+          }
+        },
+        &quot;responses&quot;: {
+          &quot;200&quot;: {
+            &quot;description&quot;: &quot;Llamada iniciada&quot;,
+            &quot;content&quot;: {
+              &quot;application/json&quot;: {
+                &quot;schema&quot;: {
+                  &quot;$ref&quot;: &quot;#/components/schemas/TwilioCallResponse&quot;
+                }
+              }
+            }
+          }
+        }
+      }
+    }
+  },
+  &quot;components&quot;: {
+    &quot;schemas&quot;: {
+      &quot;TwilioCallPayload&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;agent_id&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;ID del agente en ElevenLabs&quot;
+          },
+          &quot;agent_phone_number_id&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;ID del numero telefónico configurado en ElevenLabs&quot;
+          },
+          &quot;to_number&quot;: {
+            &quot;type&quot;: &quot;string&quot;,
+            &quot;description&quot;: &quot;Numero de destino en formato E.164&quot;
+          },
+          &quot;dynamic_variables&quot;: {
+            &quot;type&quot;: &quot;object&quot;,
+            &quot;additionalProperties&quot;: { &quot;type&quot;: &quot;string&quot; },
+            &quot;description&quot;: &quot;Variables clave-valor para personalizar el prompt&quot;
+          }
+        },
+        &quot;required&quot;: [
+          &quot;agent_id&quot;,
+          &quot;agent_phone_number_id&quot;,
+          &quot;to_number&quot;
+        ]
+      },
+      &quot;TwilioCallResponse&quot;: {
+        &quot;type&quot;: &quot;object&quot;,
+        &quot;properties&quot;: {
+          &quot;call_sid&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          },
+          &quot;status&quot;: {
+            &quot;type&quot;: &quot;string&quot;
+          }
+        }
+      }
+    }
+  }
+}</schema>
+    <schemaType>OpenApi3</schemaType>
+    <serviceBinding>{&quot;host&quot;:&quot;&quot;,&quot;basePath&quot;:&quot;/&quot;,&quot;allowedSchemes&quot;:[],&quot;requestMediaTypes&quot;:[],&quot;responseMediaTypes&quot;:[],&quot;compatibleMediaTypes&quot;:{},&quot;integrationFlags&quot;:null,&quot;extensions&quot;:{}}</serviceBinding>
+    <status>Complete</status>
+    <systemVersion>9</systemVersion>
+</ExternalServiceRegistration>
