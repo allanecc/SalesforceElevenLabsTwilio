@@ -1,58 +1,94 @@
-# Salesforce DX Project
+# Salesforce + ElevenLabs & Twilio Outbound Voice AI
 
-Salesforce DX is a development approach that brings source-driven development, team collaboration, and continuous integration to the Salesforce Platform. Instead of working directly in an org through a web browser, you work with metadata as source files in a local DX project, track changes in version control, and deploy through automated processes.
+A Salesforce integration that enables automated, AI-driven outbound phone calls directly from CRM records using **Salesforce Screen Flows**, **External Services**, **ElevenLabs Conversational AI**, and **Twilio**. 
 
-This project template gets you started with the tools and structure you need to build Salesforce applications using source control, scratch orgs, and the Salesforce CLI.
+This project also includes a public **Apex REST Webhook** to automatically record call transcriptions, summaries, and metadata as completed **Tasks** linked to the corresponding Contact in Salesforce.
 
-## Prerequisites
+---
 
-Before you start, make sure you have:
+## 🌟 Features
 
-- **Salesforce CLI** - Download from [developer.salesforce.com/tools/salesforcecli](https://developer.salesforce.com/tools/salesforcecli). See [Install Salesforce CLI](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_install_cli.htm) for details.
-- **VS Code with Salesforce Extension Pack** - See [Installation Instructions](https://developer.salesforce.com/docs/platform/sfvscode-extensions/guide/install.html) for details. Includes the Agentforce Vibes extension.
-- **A development org** - Sign up for a free Developer Edition org [here](https://developer.salesforce.com/signup).
-- **Dev Hub enabled** (optional, required to create scratch orgs) - You can enable Dev Hub in your development org under Setup > Dev Hub.  See [Provide Developers Access to Salesforce DX Tools](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_setup_dx_tools.htm).
+* **One-Click AI Calls:** Initiated via a custom Screen Flow embedded on Salesforce Contact / Lead Lightning pages.
+* **OpenAPI 3.0 Integration:** Leverages Salesforce External Services and Named Credentials to connect seamlessly with ElevenLabs APIs.
+* **Contextual AI Conversations:** Dynamic variables (`First Name`, `Ticket ID`, etc.) passed to the ElevenLabs agent prompt at the start of the call.
+* **Automated Post-Call Processing:** Exposes an Apex REST endpoint (`without sharing`) on Experience Cloud to capture call details upon completion.
+* **Automatic CRM Logging:** Creates a `Task` record with structured transcriptions, AI call outcome summaries, and automatically links to the Contact based on phone matching.
 
-## Project Structure
+---
 
-Your DX project follows this structure:
+## 🏗️ Architecture & Flow
 
-- **`force-app/main/default/`** - Your metadata source files live in this default package directory. You can configure additional package directories in the `sfdx-project.json` file.
-- **`config/`** - Scratch org definitions and project settings
-- **`scripts/`** - Automation scripts for common tasks
-- **`sfdx-project.json`** - Project manifest that defines package directories, namespace, API version, and other project-level settings
+1. **Trigger:** User launches the Screen Flow from a Contact record page in Salesforce.
+2. **Callout:** Salesforce calls ElevenLabs Twilio Outbound API via External Services (`POST /v1/convai/twilio/outbound-call`).
+3. **Execution:** ElevenLabs connects with Twilio to dial the recipient and manages the conversational voice session.
+4. **Post-Call Webhook:** Upon call completion, ElevenLabs posts a JSON payload containing the transcript, summary, and call details to the Salesforce Apex REST endpoint.
+5. **Record Creation:** Salesforce processes the payload and logs a completed `Task` under the Contact record.
 
-See [Salesforce DX Project Configuration](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_ws_config.htm).
+---
 
-## Get Started
+## 📁 Repository Structure
 
-Ready to start developing? The [Get Started with Salesforce DX](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/sfdx_dev_get_started_dx.htm) guide walks you through your first project, from creating a scratch org to creating a simple Apex class or LWC to deploying your code to a sandbox.
+```
+├── force-app/
+│   └── main/
+│       └── default/
+│           ├── classes/
+│           │   ├── ElevenLabsWebhookResource.cls
+│           │   └── ElevenLabsWebhookResourceTest.cls
+│           ├── flows/
+│           │   └── Launch_ElevenLabs_Call.flow-meta.xml
+│           └── externalServices/
+│               └── ElevenLabs_Twilio_Outbound_API.externalService-meta.xml
+├── openapi/
+│   └── elevenlabs-twilio-spec.json
+└── README.md
+```
 
-## Common Salesforce CLI Commands
+---
 
-Here are common CLI commands that you'll use the most:
+## ⚙️ Setup & Configuration
 
-- `sf org login web`: Authorize an org
-- `sf org open`: Open your org in a browser
-- `sf org create scratch`: Create a scratch org
-- `sf project deploy start`: Deploy metadata to your org
-- `sf project retrieve start`: Retrieve metadata from your org
-- `sf template generate <artifact>`: Scaffold new components, such as Apex classes and triggers, LWC components, Lightning apps, and more
-- `sf apex <command>`: Run Apex tests, run anonymous Apex blocks, and view logs
-- `sf data <command>`: Work with test data
-- `sf alias <command>`: Manage org aliases
-- `sf config <command>`: Configure CLI settings
+### 1. ElevenLabs & Twilio Setup
+1. Create a Conversational AI agent in [ElevenLabs](https://elevenlabs.io).
+2. Connect your **Twilio** account credentials inside the ElevenLabs Workspace settings.
+3. Import or register a phone number in ElevenLabs (`agent_phone_number_id`).
 
-## Use Agentforce Vibes to Build Lightning Apps
+### 2. Salesforce Credentials & External Services
+1. **External Credential:** Create `ElevenLabs_External` using Custom Headers:
+   * **Header Name:** `xi-api-key`
+   * **Header Value:** `{!$Credential.Parameter.api_key}`
+2. **Named Credential:** Create `ElevenLabs_API` pointing to `https://api.elevenlabs.io`.
+3. **External Services:** Import the OpenAPI 3.0 specification (`openapi/elevenlabs-twilio-spec.json`).
 
-Transform your ideas into custom Lightning apps that extend CRM workflows directly in Lightning Experience. Through natural conversations with Agentforce Vibes, implement custom objects and fields, complex business logic, and dynamic UI components. See [Build a Lightning App Using Agentforce Vibes](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/lexapp-overview.html).
+### 3. Screen Flow Setup
+1. Create a Screen Flow with an input variable `recordId`.
+2. Fetch Contact details (`Get Records`).
+3. Populate `ExternalService__..._TwilioCallPayload` variables (`agent_id`, `agent_phone_number_id`, `to_number`).
+4. Execute the External Service Action (`makeTwilioCall`).
+5. Embed the Flow on the Contact Lightning Page layout.
 
-## Additional Resources
+### 4. Post-Call Webhook Endpoint
+1. Deploy `ElevenLabsWebhookResource.cls` to your org.
+2. Expose the Apex REST class on a public **Salesforce Experience Cloud (Site)** Guest User Profile.
+3. Configure the Webhook URL in ElevenLabs Agent Settings:
+   ```text
+   https://<your-domain>.my.site.com/services/apexrest/elevenlabs/webhook/v1
+   ```
 
-- [Agentforce Vibes Developer Guide](https://developer.salesforce.com/docs/platform/einstein-for-devs/guide/einstein-overview.html)
-- [Salesforce CLI Installation Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_setup.meta/sfdx_setup/sfdx_setup_intro.htm)
-- [Salesforce DX Developer Guide](https://developer.salesforce.com/docs/atlas.en-us.sfdx_dev.meta/sfdx_dev/)
-- [Salesforce CLI Command Reference](https://developer.salesforce.com/docs/atlas.en-us.sfdx_cli_reference.meta/sfdx_cli_reference/)
-- [Salesforce CLI Plugin Development Guide](https://developer.salesforce.com/docs/platform/salesforce-cli-plugin/guide/conceptual-overview.html)
-- [Salesforce VS Code Extensions Documentation](https://developer.salesforce.com/tools/vscode/)
+---
 
+## 🧪 Testing
+
+1. Navigate to any Contact record with a valid E.164 mobile number.
+2. Launch the **Lanzar Llamada ElevenLabs** flow.
+3. Complete the voice conversation with the AI agent.
+4. Check the **Activity History** under the Contact record to view the logged `Task` with summary and full transcript.
+
+---
+
+## 🛠️ Tech Stack
+
+* **CRM:** Salesforce (Apex REST, Screen Flows, External Services, Named Credentials)
+* **Voice AI:** ElevenLabs Conversational AI
+* **Telephony Provider:** Twilio
+* **API Spec:** OpenAPI 3.0 / JSON
